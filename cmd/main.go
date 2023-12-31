@@ -30,6 +30,12 @@ func main() {
 			continue
 		}
 
+		ext := strings.ToLower(filepath.Ext(entry.Name()))
+		if ext == "" || ext != ".xhtml" && ext != ".xml" {
+			fmt.Printf("Skiping %s\n", fmt.Sprintf("%s/%s", targetPath, entry.Name()))
+			continue
+		}
+
 		filename := filepath.Join(dirPath, entry.Name())
 		file, err := os.Open(filename)
 		if err != nil {
