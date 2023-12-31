@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 type (
@@ -16,31 +17,13 @@ type (
 	TermFreqIndex = map[string]TermFreq
 )
 
-func printIndex(tfi *TermFreqIndex, depth int) {
-	if tfi == nil {
-		return
-	}
-
-	for filename, tf := range *tfi {
-		if depth == 0 {
-			break
-		}
-
-		fmt.Printf("Index %s:\n", filename)
-		for term, freq := range tf {
-			fmt.Printf("Term: %q -> %d\n", term, freq)
-		}
-		depth--
-	}
-}
-
 func main() {
-	dirPath, dir, err := getDirEntries("docs.gl/gl4")
+	targetPath := "docs.gl/gl4"
+	dirPath, dir, err := getDirEntries(targetPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// contents := []string{}
 	tfIndex := make(TermFreqIndex)
 	for _, entry := range dir {
 		if entry.IsDir() {
@@ -54,45 +37,52 @@ func main() {
 		}
 		defer file.Close()
 
-		decoder := xml.NewTokenDecoder(xml.NewDecoder(file))
-		tf := make(TermFreq)
-
-		for {
-			token, err := decoder.Token()
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Println(err)
-			}
-
-			switch t := token.(type) {
-			case xml.CharData:
-				data := strings.Split(string(t), " ")
-				if len(data) == 0 {
-					continue
-				}
-
-				for _, d := range data {
-					term := strings.Trim(d, " ")
-					if len(term) == 0 {
-						continue
-					}
-
-					v, ok := tf[term]
-					if ok {
-						tf[term] = v + 1
-					} else {
-						tf[term] = 1
-					}
-				}
-			}
+		tf, err := createTermFreq(file)
+		if err != nil {
+			fmt.Printf("Error: failed to index file %s. %s\n", file.Name(), err)
+			continue
 		}
-
 		tfIndex[filename] = tf
 	}
 
-	printIndex(&tfIndex, 1)
+	fmt.Printf("Indexed %d files in %s ...\n", len(tfIndex), targetPath)
+}
+
+func createTermFreq(r io.Reader) (TermFreq, error) {
+	decoder := xml.NewTokenDecoder(xml.NewDecoder(r))
+	tf := make(TermFreq)
+
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return tf, err
+		}
+
+		switch t := token.(type) {
+		case xml.CharData:
+			lexer := &Lexer{content: []rune(string(t))}
+			lt := lexer.nextToken()
+			for {
+				if lt == nil {
+					break
+				}
+				term := strings.ToUpper(string(lt))
+				v, ok := tf[term]
+				if ok {
+					tf[term] = v + 1
+				} else {
+					tf[term] = 1
+				}
+
+				lt = lexer.nextToken()
+			}
+		}
+	}
+
+	return tf, nil
 }
 
 func getDirEntries(path string) (string, []fs.DirEntry, error) {
@@ -110,4 +100,63 @@ func getDirEntries(path string) (string, []fs.DirEntry, error) {
 	}
 
 	return dirPath, dir, nil
+}
+
+type Lexer struct {
+	content []rune
+}
+
+func (l *Lexer) trimLeftSpace() {
+	for len(l.content) > 0 && unicode.IsSpace(l.content[0]) {
+		l.content = l.content[1:]
+	}
+}
+
+func (l *Lexer) chop(n int) []rune {
+	token := l.content[0:n]
+	l.content = l.content[n:]
+	return token
+}
+
+func (l *Lexer) nextToken() []rune {
+	l.trimLeftSpace()
+	if len(l.content) == 0 {
+		return nil
+	}
+
+	if unicode.IsLetter(l.content[0]) {
+		i := 0
+		for i < len(l.content) && unicode.IsLetter(l.content[i]) {
+			i += 1
+		}
+		return l.chop(i)
+	}
+
+	if unicode.IsNumber(l.content[0]) {
+		i := 0
+		for i < len(l.content) && unicode.IsNumber(l.content[i]) {
+			i += 1
+		}
+		return l.chop(i)
+	}
+
+	return l.chop(1)
+}
+
+func printIndex(tfi *TermFreqIndex, depth int) {
+	if tfi == nil {
+		return
+	}
+
+	for filename, tf := range *tfi {
+		if depth == 0 {
+			break
+		}
+
+		fmt.Printf("Index %s:\n", filename)
+		for term, freq := range tf {
+			fmt.Printf("Term: %q -> %d\n", term, freq)
+		}
+		depth--
+	}
 }
