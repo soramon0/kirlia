@@ -18,40 +18,74 @@ type (
 )
 
 func main() {
-	targetPath := "docs.gl/gl4"
-	dirPath, dir, err := getDirEntries(targetPath)
+	targetPath := "docs.gl"
+
+	tfIndex, err := createTermFreqIndex(targetPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	fmt.Printf("Indexed %d files in %s ...\n", len(tfIndex), targetPath)
+}
+
+func createTermFreqIndex(targetPath string) (TermFreqIndex, error) {
+	root, err := getAbsRootPath(targetPath)
+	if err != nil {
+		return nil, err
+	}
+
 	tfIndex := make(TermFreqIndex)
-	for _, entry := range dir {
-		if entry.IsDir() {
-			continue
-		}
+	skippedCount := 0
 
-		ext := strings.ToLower(filepath.Ext(entry.Name()))
-		if ext == "" || ext != ".xhtml" && ext != ".xml" {
-			fmt.Printf("Skiping %s\n", fmt.Sprintf("%s/%s", targetPath, entry.Name()))
-			continue
-		}
-
-		filename := filepath.Join(dirPath, entry.Name())
-		file, err := os.Open(filename)
+	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			log.Fatal(err)
+			return err
+		}
+
+		dirName := d.Name()
+		if d.IsDir() || dirName[0] == '.' {
+			return nil
+		}
+
+		ext := filepath.Ext(dirName)
+		if ext == "" || ext != ".xhtml" && ext != ".xml" {
+			// TODO: show using a command line flag
+			// fmt.Printf("Skiping %s\n", path)
+			skippedCount++
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			fmt.Println("Error: could not read file.", err)
+			return nil
 		}
 		defer file.Close()
-
 		tf, err := createTermFreq(file)
 		if err != nil {
 			fmt.Printf("Error: failed to index file %s. %s\n", file.Name(), err)
-			continue
+			return nil
 		}
-		tfIndex[filename] = tf
+
+		key := strings.Builder{}
+		subpaths := strings.Split(path, "/")
+		for i, p := range subpaths {
+			if strings.EqualFold(p, targetPath) {
+				rest := strings.Join(subpaths[i:], "/")
+				key.WriteString(rest)
+				break
+			}
+		}
+
+		tfIndex[key.String()] = tf
+		return nil
+	})
+
+	if err == nil && skippedCount > 0 {
+		fmt.Printf("Skipped %d files\n", skippedCount)
 	}
 
-	fmt.Printf("Indexed %d files in %s ...\n", len(tfIndex), targetPath)
+	return tfIndex, err
 }
 
 func createTermFreq(r io.Reader) (TermFreq, error) {
@@ -91,21 +125,17 @@ func createTermFreq(r io.Reader) (TermFreq, error) {
 	return tf, nil
 }
 
-func getDirEntries(path string) (string, []fs.DirEntry, error) {
+func getAbsRootPath(path string) (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return "", nil, err
-	}
-	if wd[len(wd)-3:] == "cmd" {
-		wd = wd[0 : len(wd)-3]
-	}
-	dirPath := fmt.Sprintf("%s/%s", wd, path)
-	dir, err := os.ReadDir(dirPath)
-	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
-	return dirPath, dir, nil
+	if wd[len(wd)-3:] == "cmd" {
+		wd = wd[0 : len(wd)-4]
+	}
+
+	return fmt.Sprintf("%s/%s", wd, path), nil
 }
 
 type Lexer struct {
