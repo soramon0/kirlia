@@ -178,21 +178,3 @@ func (l *Lexer) nextToken() []rune {
 
 	return l.chop(1)
 }
-
-func printIndex(tfi *TermFreqIndex, depth int) {
-	if tfi == nil {
-		return
-	}
-
-	for filename, tf := range *tfi {
-		if depth == 0 {
-			break
-		}
-
-		fmt.Printf("Index %s:\n", filename)
-		for term, freq := range tf {
-			fmt.Printf("Term: %q -> %d\n", term, freq)
-		}
-		depth--
-	}
-}
