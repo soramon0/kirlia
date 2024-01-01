@@ -172,6 +172,44 @@ func createTermFreq(r io.Reader) (TermFreq, error) {
 	return tf, nil
 }
 
+func ReadIndexFile(format string) (TermFreqIndex, error) {
+	if format == "" {
+		return nil, fmt.Errorf("error: format is required")
+	}
+
+	encodingFormat, supported := outputFormats[format]
+	if !supported {
+		return nil, fmt.Errorf("error: %q not supported", format)
+	}
+
+	filename := fmt.Sprintf("index.%s", encodingFormat)
+	root, err := getAbsRootPath(filename)
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(root)
+	if err != nil {
+		return nil, fmt.Errorf("error: reading %s failed. %s", filename, err)
+	}
+
+	buf := bytes.NewReader(data)
+	tfIndex := make(TermFreqIndex)
+
+	if format == "json" {
+		err = json.NewDecoder(buf).Decode(&tfIndex)
+	}
+
+	if format == "msgpack" {
+		err = msgpack.NewDecoder(buf).Decode(&tfIndex)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("error: decoding %s failed. %s", filename, err)
+	}
+
+	return tfIndex, nil
+}
+
 func getAbsRootPath(path string) (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {

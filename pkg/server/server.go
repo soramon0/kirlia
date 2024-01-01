@@ -4,15 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	termfreq "github.com/soramon0/kirlia/pkg/term_freq"
 )
 
 type api struct {
 	*http.Server
+	tfIndex *termfreq.TermFreqIndex
 }
 
-func NewServer(addr string) *api {
+func NewServer(addr string, tfIndex *termfreq.TermFreqIndex) *api {
 	api := &api{
-		Server: &http.Server{Addr: addr},
+		Server:  &http.Server{Addr: addr},
+		tfIndex: tfIndex,
 	}
 
 	api.Server.Handler = api.newMux()

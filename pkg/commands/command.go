@@ -56,11 +56,18 @@ func (c *cmd) Execute(args []string) error {
 
 	case serveCmd.Name():
 		addr := c.String("h", "0.0.0.0:9001", "host address")
+		format := c.String("f", "json", "file format to read: msgpack, json")
 		if err := c.Parse(args); err != nil {
 			return err
 		}
 
-		if err := server.NewServer(*addr).Serve(); err != nil {
+		tfIndex, err := termfreq.ReadIndexFile(*format)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Loaded %d indexed files from index.%s ...\n", len(tfIndex), *format)
+
+		if err := server.NewServer(*addr, &tfIndex).Serve(); err != nil {
 			return err
 		}
 

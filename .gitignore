@@ -20,4 +20,5 @@ go.work
 index.*
 kirlia
 docs.gl
+.vscode
 
