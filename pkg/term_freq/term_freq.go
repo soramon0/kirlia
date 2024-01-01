@@ -44,13 +44,13 @@ func NewIndex(targetPath string) (TermFreqIndex, error) {
 
 		file, err := os.Open(path)
 		if err != nil {
-			fmt.Println("Error: could not read file.", err)
+			fmt.Println("error: could not read file.", err)
 			return nil
 		}
 		defer file.Close()
 		tf, err := createTermFreq(file)
 		if err != nil {
-			fmt.Printf("Error: failed to index file %s. %s\n", file.Name(), err)
+			fmt.Printf("error: failed to index file %s. %s\n", file.Name(), err)
 			return nil
 		}
 

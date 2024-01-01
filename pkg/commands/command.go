@@ -3,26 +3,26 @@ package commands
 import (
 	"fmt"
 
-	"github.com/soramon0/kirlia/pkg/term_freq"
+	termfreq "github.com/soramon0/kirlia/pkg/term_freq"
 )
 
 func Run(args []string) error {
-	if len(args) < 2 {
+	if len(args) < 1 {
 		usage()
-		return fmt.Errorf("Error: command is required")
+		return fmt.Errorf("error: command is required")
 	}
 
-	if args[1] != "index" {
+	if args[0] != "index" {
 		usage()
-		return fmt.Errorf("Error: invalid command")
+		return fmt.Errorf("error: invalid command")
 	}
 
-	if len(args) < 3 || args[2] == "" {
+	if len(args) < 2 || args[1] == "" {
 		usage()
-		return fmt.Errorf("Error: file name is required")
+		return fmt.Errorf("error: file name is required")
 	}
 
-	targetPath := args[2]
+	targetPath := args[1]
 	tfIndex, err := termfreq.NewIndex(targetPath)
 	if err != nil {
 		return err
