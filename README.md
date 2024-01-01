@@ -14,5 +14,5 @@ go run example/index.go
 
 ```bash
 go build -o kirlia ./cmd/main.go
-./kirlia index -i example/file.xhtml
+./kirlia index -i example/file.xhtml -o json
 ```
