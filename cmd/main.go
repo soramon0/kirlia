@@ -17,8 +17,30 @@ type (
 	TermFreqIndex = map[string]TermFreq
 )
 
+func usage() {
+	fmt.Println("usage:")
+	fmt.Println("  kirlia [command] (options)")
+	fmt.Println("    - available commands:")
+	fmt.Println("      - index filename")
+	os.Exit(1)
+}
+
 func main() {
-	targetPath := "docs.gl"
+	if len(os.Args) < 2 {
+		usage()
+	}
+
+	if os.Args[1] != "index" {
+		fmt.Println("Error: invalid command")
+		usage()
+	}
+
+	if len(os.Args) < 3 || os.Args[2] == "" {
+		fmt.Println("Error: file name is required")
+		usage()
+	}
+
+	targetPath := os.Args[2]
 
 	tfIndex, err := createTermFreqIndex(targetPath)
 	if err != nil {
@@ -69,8 +91,10 @@ func createTermFreqIndex(targetPath string) (TermFreqIndex, error) {
 
 		key := strings.Builder{}
 		subpaths := strings.Split(path, "/")
+		targetPaths := strings.Split(targetPath, "/")
+		parentPath := targetPaths[len(targetPaths)-1]
 		for i, p := range subpaths {
-			if strings.EqualFold(p, targetPath) {
+			if strings.EqualFold(p, parentPath) {
 				rest := strings.Join(subpaths[i:], "/")
 				key.WriteString(rest)
 				break
