@@ -39,7 +39,7 @@ func (c *cmd) Execute(args []string) error {
 	switch cmdName {
 	case indexCmd.Name():
 		input := c.String("i", "", "input directory or file to index")
-		output := c.String("o", "json", "output format: msgpack, json")
+		output := c.String("o", "", "output format: msgpack, json")
 		reportSkipped := c.Bool("rs", false, "report skipped file names")
 		if err := c.Parse(args); err != nil {
 			return err
@@ -50,7 +50,7 @@ func (c *cmd) Execute(args []string) error {
 			OutputFormat:  *output,
 			ReportSkipped: *reportSkipped,
 		}
-		tfIndex, err := termfreq.NewIndex(args)
+		tfIndex, err := termfreq.GenerateIndex(args)
 		if err != nil {
 			return err
 		}

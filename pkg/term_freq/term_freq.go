@@ -1,6 +1,7 @@
 package termfreq
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -21,12 +22,38 @@ type IndexArgs struct {
 	OutputFormat  string
 }
 
-func NewIndex(args IndexArgs) (TermFreqIndex, error) {
+var outputFormats = map[string]string{
+	"json": "json",
+}
+
+func GenerateIndex(args IndexArgs) (TermFreqIndex, error) {
 	if args.InputFile == "" {
 		return nil, fmt.Errorf("error: file name is required")
 	}
 
-	root, err := getAbsRootPath(args.InputFile)
+	format, supported := outputFormats[args.OutputFormat]
+	if args.OutputFormat != "" && !supported {
+		return nil, fmt.Errorf("error: %q not supported", args.OutputFormat)
+	}
+
+	tfIndex, err := newIndex(args.InputFile, args.ReportSkipped)
+	if err != nil {
+		return nil, err
+	}
+
+	if supported {
+		filename, err := saveFile(&tfIndex, format)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("Saved index in", filename)
+	}
+
+	return tfIndex, nil
+}
+
+func newIndex(inputFile string, reportSkipped bool) (TermFreqIndex, error) {
+	root, err := getAbsRootPath(inputFile)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +73,7 @@ func NewIndex(args IndexArgs) (TermFreqIndex, error) {
 
 		ext := filepath.Ext(dirName)
 		if ext == "" || ext != ".xhtml" && ext != ".xml" {
-			if args.ReportSkipped {
+			if reportSkipped {
 				skippedCount++
 				fmt.Printf("Skiping %s\n", path)
 			}
@@ -67,7 +94,7 @@ func NewIndex(args IndexArgs) (TermFreqIndex, error) {
 
 		key := strings.Builder{}
 		subpaths := strings.Split(path, "/")
-		targetPaths := strings.Split(args.InputFile, "/")
+		targetPaths := strings.Split(inputFile, "/")
 		parentPath := targetPaths[len(targetPaths)-1]
 		for i, p := range subpaths {
 			if strings.EqualFold(p, parentPath) {
@@ -80,12 +107,11 @@ func NewIndex(args IndexArgs) (TermFreqIndex, error) {
 		tfIndex[key.String()] = tf
 		return nil
 	})
-
 	if err != nil {
-		return tfIndex, err
+		return nil, err
 	}
 
-	if args.ReportSkipped {
+	if reportSkipped {
 		fmt.Printf("Skipped %d files\n", skippedCount)
 	}
 
@@ -139,4 +165,23 @@ func getAbsRootPath(path string) (string, error) {
 	}
 
 	return fmt.Sprintf("%s/%s", wd, path), nil
+}
+
+func saveFile(tfIndex *TermFreqIndex, format string) (string, error) {
+	filename := fmt.Sprintf("index.%s", format)
+
+	if format == "json" {
+		data, err := json.Marshal(tfIndex)
+		if err != nil {
+			return "", fmt.Errorf("error: failed to encode %s. %s", filename, err)
+		}
+
+		if err := os.WriteFile(filename, data, 0644); err != nil {
+			return "", fmt.Errorf("error: failed to write %s. %s", filename, err)
+		}
+
+		return filename, nil
+	}
+
+	return "", fmt.Errorf("error: %q not supported", format)
 }
