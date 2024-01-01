@@ -1,6 +1,7 @@
 package termfreq
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -45,8 +46,8 @@ func GenerateIndex(args IndexArgs) (TermFreqIndex, error) {
 	}
 
 	if supported {
-		filename, err := saveFile(&tfIndex, format)
-		if err != nil {
+		filename := fmt.Sprintf("index.%s", format)
+		if err := saveFile(&tfIndex, filename, format); err != nil {
 			return nil, err
 		}
 		fmt.Println("Saved index in", filename)
@@ -85,11 +86,25 @@ func newIndex(inputFile string, reportSkipped bool) (TermFreqIndex, error) {
 
 		file, err := os.Open(path)
 		if err != nil {
-			fmt.Println("error: could not read file.", err)
+			fmt.Println("error: could not open file.", err)
 			return nil
 		}
 		defer file.Close()
-		tf, err := createTermFreq(file)
+
+		fileInfo, err := file.Stat()
+		if err != nil {
+			fmt.Println("error: could not read file stats.", err)
+			return nil
+		}
+
+		buf := make([]byte, fileInfo.Size())
+		_, err = file.Read(buf)
+		if err != nil {
+			fmt.Println("error: could read file.", err)
+			return nil
+		}
+
+		tf, err := createTermFreq(bytes.NewReader(buf))
 		if err != nil {
 			fmt.Printf("error: failed to index file %s. %s\n", file.Name(), err)
 			return nil
@@ -170,28 +185,25 @@ func getAbsRootPath(path string) (string, error) {
 	return fmt.Sprintf("%s/%s", wd, path), nil
 }
 
-func saveFile(tfIndex *TermFreqIndex, format string) (string, error) {
-	filename := fmt.Sprintf("index.%s", format)
-
-	file, err := os.Create(filename)
-	if err != nil {
-		return "", fmt.Errorf("error: failed creating %s. %s", filename, err)
-	}
+func saveFile(tfIndex *TermFreqIndex, filename, format string) error {
+	var buf bytes.Buffer
+	var err error
 
 	if format == "json" {
-		err = json.NewEncoder(file).Encode(tfIndex)
+		err = json.NewEncoder(&buf).Encode(tfIndex)
 	}
 
 	if format == "msgpack" {
-		err = msgpack.NewEncoder(file).Encode(tfIndex)
+		err = msgpack.NewEncoder(&buf).Encode(tfIndex)
 	}
 
 	if err != nil {
-		if err := os.Remove(filename); err != nil {
-			fmt.Printf("error: failed cleaning %s. %s\n", filename, err)
-		}
-		return "", fmt.Errorf("error: failed to encode %s. %s", filename, err)
+		return fmt.Errorf("error: %s encoding failed. %s", format, err)
 	}
 
-	return filename, nil
+	if err := os.WriteFile(filename, buf.Bytes(), 0666); err != nil {
+		return fmt.Errorf("error: creating %s failed. %s", filename, err)
+	}
+
+	return nil
 }
