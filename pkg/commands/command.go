@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/soramon0/kirlia/pkg/server"
 	termfreq "github.com/soramon0/kirlia/pkg/term_freq"
 )
 
@@ -31,11 +32,8 @@ func Run(args []string) error {
 }
 
 func (c *cmd) Execute(args []string) error {
-	if c == nil {
-		return fmt.Errorf("error: uknown command")
-	}
-
 	cmdName := c.Name()
+
 	switch cmdName {
 	case indexCmd.Name():
 		input := c.String("i", "", "input directory or file to index")
@@ -57,7 +55,14 @@ func (c *cmd) Execute(args []string) error {
 		fmt.Printf("Indexed %d files in %s ...\n", len(tfIndex), *input)
 
 	case serveCmd.Name():
-		return fmt.Errorf("error: serve command not implemented yet")
+		addr := c.String("h", "0.0.0.0:9001", "host address")
+		if err := c.Parse(args); err != nil {
+			return err
+		}
+
+		if err := server.NewServer(*addr).Serve(); err != nil {
+			return err
+		}
 
 	default:
 		return fmt.Errorf("error: unknown %q command", cmdName)
