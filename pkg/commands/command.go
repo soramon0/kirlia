@@ -16,7 +16,7 @@ var (
 	}
 )
 
-type Cmd struct {
+type cmd struct {
 	*flag.FlagSet
 }
 
@@ -30,7 +30,7 @@ func Run(args []string) error {
 	return cmd.Execute(args[1:])
 }
 
-func (c *Cmd) Execute(args []string) error {
+func (c *cmd) Execute(args []string) error {
 	if c == nil {
 		return fmt.Errorf("error: uknown command")
 	}
@@ -66,17 +66,17 @@ func (c *Cmd) Execute(args []string) error {
 	return nil
 }
 
-func parseCommand(args []string) (*Cmd, error) {
+func parseCommand(args []string) (*cmd, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("error: a command is required")
 	}
 
-	cmd := commands[args[0]]
-	if cmd == nil {
+	c := commands[args[0]]
+	if c == nil {
 		return nil, fmt.Errorf("error: uknown %q command", args[0])
 	}
 
-	return &Cmd{cmd}, nil
+	return &cmd{c}, nil
 }
 
 func usage() {
