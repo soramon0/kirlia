@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type (
@@ -23,7 +25,8 @@ type IndexArgs struct {
 }
 
 var outputFormats = map[string]string{
-	"json": "json",
+	"json":    "json",
+	"msgpack": "msgpack",
 }
 
 func GenerateIndex(args IndexArgs) (TermFreqIndex, error) {
@@ -170,18 +173,25 @@ func getAbsRootPath(path string) (string, error) {
 func saveFile(tfIndex *TermFreqIndex, format string) (string, error) {
 	filename := fmt.Sprintf("index.%s", format)
 
-	if format == "json" {
-		data, err := json.Marshal(tfIndex)
-		if err != nil {
-			return "", fmt.Errorf("error: failed to encode %s. %s", filename, err)
-		}
-
-		if err := os.WriteFile(filename, data, 0644); err != nil {
-			return "", fmt.Errorf("error: failed to write %s. %s", filename, err)
-		}
-
-		return filename, nil
+	file, err := os.Create(filename)
+	if err != nil {
+		return "", fmt.Errorf("error: failed creating %s. %s", filename, err)
 	}
 
-	return "", fmt.Errorf("error: %q not supported", format)
+	if format == "json" {
+		err = json.NewEncoder(file).Encode(tfIndex)
+	}
+
+	if format == "msgpack" {
+		err = msgpack.NewEncoder(file).Encode(tfIndex)
+	}
+
+	if err != nil {
+		if err := os.Remove(filename); err != nil {
+			fmt.Printf("error: failed cleaning %s. %s\n", filename, err)
+		}
+		return "", fmt.Errorf("error: failed to encode %s. %s", filename, err)
+	}
+
+	return filename, nil
 }
