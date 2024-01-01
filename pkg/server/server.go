@@ -11,37 +11,12 @@ type api struct {
 }
 
 func NewServer(addr string) *api {
-	mux := http.NewServeMux()
 	api := &api{
-		Server: &http.Server{
-			Addr: addr,
-		},
+		Server: &http.Server{Addr: addr},
 	}
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			api.notFound(w)
-			return
-		}
+	api.Server.Handler = api.newMux()
 
-		path := r.URL.Path
-		if path != "/" && path != "/index.html" {
-			api.notFound(w)
-			return
-		}
-
-		w.Header().Add("Content-Type", "text/html")
-		fmt.Fprint(w, "<h1>Hello world</h1>")
-	})
-
-	mux.HandleFunc("/api/search", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			w.Header().Add("Content-Type", "text/html")
-			fmt.Fprint(w, "<h1>Query Index</h1>")
-		}
-	})
-
-	api.Server.Handler = mux
 	return api
 }
 
@@ -62,6 +37,38 @@ func (a *api) Serve() error {
 	}
 
 	return nil
+}
+
+func (a *api) newMux() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", a.serveHomePage)
+	mux.HandleFunc("/api/search", a.searchPage)
+
+	return mux
+}
+
+func (a *api) serveHomePage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		a.notFound(w)
+		return
+	}
+
+	path := r.URL.Path
+	if path != "/" && path != "/index.html" {
+		a.notFound(w)
+		return
+	}
+
+	w.Header().Add("Content-Type", "text/html")
+	fmt.Fprint(w, "<h1>Hello world</h1>")
+}
+
+func (a *api) searchPage(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		w.Header().Add("Content-Type", "text/html")
+		fmt.Fprint(w, "<h1>Query Index</h1>")
+	}
 }
 
 func (a *api) notFound(w http.ResponseWriter) {
