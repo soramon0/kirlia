@@ -15,7 +15,7 @@ type (
 	TermFreqIndex = map[string]TermFreq
 )
 
-func NewIndex(targetPath string) (TermFreqIndex, error) {
+func NewIndex(targetPath string, reportSkipped bool) (TermFreqIndex, error) {
 	root, err := getAbsRootPath(targetPath)
 	if err != nil {
 		return nil, err
@@ -36,9 +36,10 @@ func NewIndex(targetPath string) (TermFreqIndex, error) {
 
 		ext := filepath.Ext(dirName)
 		if ext == "" || ext != ".xhtml" && ext != ".xml" {
-			// TODO: show using a command line flag
-			// fmt.Printf("Skiping %s\n", path)
-			skippedCount++
+			if reportSkipped {
+				skippedCount++
+				fmt.Printf("Skiping %s\n", path)
+			}
 			return nil
 		}
 
@@ -70,7 +71,7 @@ func NewIndex(targetPath string) (TermFreqIndex, error) {
 		return nil
 	})
 
-	if err == nil && skippedCount > 0 {
+	if err == nil && reportSkipped && skippedCount > 0 {
 		fmt.Printf("Skipped %d files\n", skippedCount)
 	}
 
