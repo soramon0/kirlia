@@ -15,8 +15,18 @@ type (
 	TermFreqIndex = map[string]TermFreq
 )
 
-func NewIndex(targetPath string, reportSkipped bool) (TermFreqIndex, error) {
-	root, err := getAbsRootPath(targetPath)
+type IndexArgs struct {
+	InputFile     string
+	ReportSkipped bool
+	OutputFormat  string
+}
+
+func NewIndex(args IndexArgs) (TermFreqIndex, error) {
+	if args.InputFile == "" {
+		return nil, fmt.Errorf("error: file name is required")
+	}
+
+	root, err := getAbsRootPath(args.InputFile)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +46,7 @@ func NewIndex(targetPath string, reportSkipped bool) (TermFreqIndex, error) {
 
 		ext := filepath.Ext(dirName)
 		if ext == "" || ext != ".xhtml" && ext != ".xml" {
-			if reportSkipped {
+			if args.ReportSkipped {
 				skippedCount++
 				fmt.Printf("Skiping %s\n", path)
 			}
@@ -57,7 +67,7 @@ func NewIndex(targetPath string, reportSkipped bool) (TermFreqIndex, error) {
 
 		key := strings.Builder{}
 		subpaths := strings.Split(path, "/")
-		targetPaths := strings.Split(targetPath, "/")
+		targetPaths := strings.Split(args.InputFile, "/")
 		parentPath := targetPaths[len(targetPaths)-1]
 		for i, p := range subpaths {
 			if strings.EqualFold(p, parentPath) {
@@ -71,11 +81,15 @@ func NewIndex(targetPath string, reportSkipped bool) (TermFreqIndex, error) {
 		return nil
 	})
 
-	if err == nil && reportSkipped && skippedCount > 0 {
+	if err != nil {
+		return tfIndex, err
+	}
+
+	if args.ReportSkipped {
 		fmt.Printf("Skipped %d files\n", skippedCount)
 	}
 
-	return tfIndex, err
+	return tfIndex, nil
 }
 
 func createTermFreq(r io.Reader) (TermFreq, error) {

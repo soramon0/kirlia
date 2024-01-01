@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	args := []string{"index", "-f", "example/file.xhtml"}
+	args := []string{"index", "-i", "example/file.xhtml"}
 	if err := commands.Run(args); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

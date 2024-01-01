@@ -38,20 +38,23 @@ func (c *Cmd) Execute(args []string) error {
 	cmdName := c.Name()
 	switch cmdName {
 	case indexCmd.Name():
-		targetPath := c.String("f", "", "directory or file to index")
+		input := c.String("i", "", "input directory or file to index")
+		output := c.String("o", "json", "output format: msgpack, json")
 		reportSkipped := c.Bool("rs", false, "report skipped file names")
 		if err := c.Parse(args); err != nil {
 			return err
 		}
-		if *targetPath == "" {
-			return fmt.Errorf("error: file name is required")
-		}
 
-		tfIndex, err := termfreq.NewIndex(*targetPath, *reportSkipped)
+		args := termfreq.IndexArgs{
+			InputFile:     *input,
+			OutputFormat:  *output,
+			ReportSkipped: *reportSkipped,
+		}
+		tfIndex, err := termfreq.NewIndex(args)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Indexed %d files in %s ...\n", len(tfIndex), *targetPath)
+		fmt.Printf("Indexed %d files in %s ...\n", len(tfIndex), *input)
 
 	case serveCmd.Name():
 		return fmt.Errorf("error: serve command not implemented yet")
