@@ -107,21 +107,20 @@ func createTermFreq(r io.Reader) (TermFreq, error) {
 
 		switch t := token.(type) {
 		case xml.CharData:
-			l := &lexer{content: []rune(string(t))}
-			lt := l.nextToken()
+			l := newLexer(string(t))
+			term := l.nextToken()
 			for {
-				if lt == nil {
+				if term == nil {
 					break
 				}
-				term := strings.ToUpper(string(lt))
-				v, ok := tf[term]
+				v, ok := tf[*term]
 				if ok {
-					tf[term] = v + 1
+					tf[*term] = v + 1
 				} else {
-					tf[term] = 1
+					tf[*term] = 1
 				}
 
-				lt = l.nextToken()
+				term = l.nextToken()
 			}
 		}
 	}
