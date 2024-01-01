@@ -2,24 +2,24 @@ package commands
 
 import (
 	"fmt"
-	"os"
 
-	termfreq "github.com/soramon0/kirlia/pkg/term_freq"
+	"github.com/soramon0/kirlia/pkg/term_freq"
 )
 
 func Run(args []string) error {
 	if len(args) < 2 {
 		usage()
+		return fmt.Errorf("Error: command is required")
 	}
 
 	if args[1] != "index" {
-		fmt.Println("Error: invalid command")
 		usage()
+		return fmt.Errorf("Error: invalid command")
 	}
 
 	if len(args) < 3 || args[2] == "" {
-		fmt.Println("Error: file name is required")
 		usage()
+		return fmt.Errorf("Error: file name is required")
 	}
 
 	targetPath := args[2]
@@ -37,5 +37,4 @@ func usage() {
 	fmt.Println("  kirlia [command] (options)")
 	fmt.Println("    - available commands:")
 	fmt.Println("      - index filename")
-	os.Exit(1)
 }
