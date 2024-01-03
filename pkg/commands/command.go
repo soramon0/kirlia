@@ -85,7 +85,7 @@ func parseCommand(args []string) (*cmd, error) {
 
 	c := commands[args[0]]
 	if c == nil {
-		return nil, fmt.Errorf("error: uknown %q command", args[0])
+		return nil, fmt.Errorf("error: unknown %q command", args[0])
 	}
 
 	return &cmd{c}, nil
