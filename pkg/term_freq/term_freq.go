@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -189,6 +190,12 @@ func ReadIndexFile(format string) (TermFreqIndex, error) {
 	}
 	data, err := os.ReadFile(root)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf(
+				"error: %s file not found. index your folder/file first",
+				filename,
+			)
+		}
 		return nil, fmt.Errorf("error: reading %s failed. %s", filename, err)
 	}
 
