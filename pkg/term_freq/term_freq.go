@@ -37,7 +37,7 @@ func GenerateIndex(args IndexArgs) (TermFreqIndex, error) {
 	}
 
 	format, supported := outputFormats[args.OutputFormat]
-	if args.OutputFormat != "" && !supported {
+	if !supported {
 		return nil, fmt.Errorf("error: %q not supported", args.OutputFormat)
 	}
 
