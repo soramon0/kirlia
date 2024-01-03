@@ -46,13 +46,11 @@ func GenerateIndex(args IndexArgs) (TermFreqIndex, error) {
 		return nil, err
 	}
 
-	if supported {
-		filename := fmt.Sprintf("index.%s", format)
-		if err := saveFile(&tfIndex, filename, format); err != nil {
-			return nil, err
-		}
-		fmt.Println("Saved index in", filename)
+	filename := fmt.Sprintf("index.%s", format)
+	if err := saveFile(&tfIndex, filename, format); err != nil {
+		return nil, err
 	}
+	fmt.Println("Saved index in", filename)
 
 	return tfIndex, nil
 }
