@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -73,6 +74,7 @@ func (a *api) newMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", a.serveHomePage)
+	mux.HandleFunc("/api/search", a.searchDocuments)
 
 	return mux
 }
@@ -92,6 +94,35 @@ func (a *api) serveHomePage(w http.ResponseWriter, r *http.Request) {
 	a.render(w, http.StatusOK, func(buf *bytes.Buffer) error {
 		return a.pageHome.Execute(buf, nil)
 	})
+}
+
+func (a *api) searchDocuments(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		a.jsonResponse(w, http.StatusBadRequest, apiResponse{Msg: "invalid request method"})
+		return
+	}
+
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		a.jsonResponse(w, http.StatusBadRequest, apiResponse{Msg: "q query param is required"})
+		return
+	}
+
+	a.jsonResponse(w, http.StatusOK, apiResponse{Msg: query})
+}
+
+func (a *api) jsonResponse(w http.ResponseWriter, status int, data any) {
+	w.Header().Add("Content-Type", "application/json")
+
+	result, err := json.Marshal(data)
+	if err != nil {
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(apiResponse{Msg: "Failed to render json"})
+		return
+	}
+
+	w.WriteHeader(status)
+	w.Write(result)
 }
 
 func (a *api) notFound(w http.ResponseWriter) {
@@ -127,4 +158,9 @@ func (a *api) render(
 
 	w.WriteHeader(status)
 	io.Copy(w, &buf)
+}
+
+type apiResponse struct {
+	Msg  string `json:"msg"`
+	Data any    `json:"data,omitempty"`
 }
