@@ -4,8 +4,114 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TF - IDF</title>
+
+    <style>
+      main {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      form {
+        width: 100%;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .field label {
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .field input {
+        padding: 12px 8px;
+        border-radius: 8px;
+        border-color: #eee;
+        outline: none;
+      }
+
+      form button {
+        border: none;
+        border-radius: 8px;
+        background-color: burlywood;
+        margin: 8px 0px;
+        padding: 16px;
+        color: white;
+        width: 100%;
+        cursor: pointer;
+      }
+
+      #error {
+        background-color: #ff7f7f;
+        color: white;
+        border-radius: 8px;
+        width: 100%;
+        text-align: center;
+      }
+
+      #error p {
+        padding: 4px 16px;
+      }
+    </style>
   </head>
   <body>
-    <h1>Query</h1>
+    <main>
+      <h1>Search Indexed files</h1>
+      <form>
+        <div class="field">
+          <label for="q">Query:</label>
+          <input id="q" type="text" name="q" />
+        </div>
+        <button type="submit">Search</button>
+      </form>
+      <div id="error"></div>
+      <div id="result"></div>
+    </main>
+
+    <script>
+      const form = document.querySelector("form");
+      const errContainer = document.getElementById("error");
+      const resultContainer = document.getElementById("result");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errContainer.innerHTML = "";
+        const formData = new FormData(e.target);
+        const terms = formData.get("q");
+        if (!terms) {
+          errContainer.innerHTML = `<p>Query value is required</p>`;
+          return;
+        }
+        try {
+          const result = await search(terms);
+          resultContainer.innerHTML = JSON.stringify(result);
+        } catch (err) {
+          errContainer.innerHTML = `<p>${err.message || "search failed"}</p>`;
+        }
+      });
+
+      async function search(terms) {
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(terms)}`,
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.msg);
+        }
+        return data;
+      }
+    </script>
   </body>
 </html>
