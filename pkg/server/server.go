@@ -13,8 +13,10 @@ import (
 
 type api struct {
 	*http.Server
-	tfIndex *termfreq.TermFreqIndex
-	templ   *template.Template
+	tfIndex  *termfreq.TermFreqIndex
+	pageHome *template.Template
+	page404  *template.Template
+	page500  *template.Template
 }
 
 func NewServer(addr string, tfIndex *termfreq.TermFreqIndex) (*api, error) {
@@ -26,11 +28,21 @@ func NewServer(addr string, tfIndex *termfreq.TermFreqIndex) (*api, error) {
 	if err != nil {
 		return nil, err
 	}
+	t404, err := template.ParseFiles("resources/404.html")
+	if err != nil {
+		return nil, err
+	}
+	t500, err := template.ParseFiles("resources/500.html")
+	if err != nil {
+		return nil, err
+	}
 
 	api := &api{
-		Server:  &http.Server{Addr: addr},
-		tfIndex: tfIndex,
-		templ:   t,
+		Server:   &http.Server{Addr: addr},
+		tfIndex:  tfIndex,
+		pageHome: t,
+		page404:  t404,
+		page500:  t500,
 	}
 
 	api.Server.Handler = api.newMux()
@@ -77,20 +89,42 @@ func (a *api) serveHomePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Content-Type", "text/html")
-
-	var buf bytes.Buffer
-	if err := a.templ.Execute(&buf, nil); err != nil {
-		fmt.Printf("error: %s\n", err)
-		w.WriteHeader(500)
-		fmt.Fprint(w, "<h1>Internal Server Error</h1")
-		return
-	}
-	io.Copy(w, &buf)
+	a.render(w, http.StatusOK, func(buf *bytes.Buffer) error {
+		return a.pageHome.Execute(buf, nil)
+	})
 }
 
 func (a *api) notFound(w http.ResponseWriter) {
+	a.render(w, http.StatusNotFound, func(buf *bytes.Buffer) error {
+		return a.page404.Execute(buf, nil)
+	})
+}
+
+func (a *api) internalErr(w http.ResponseWriter) {
+	a.render(w, http.StatusInternalServerError, func(buf *bytes.Buffer) error {
+		return a.page500.Execute(buf, nil)
+	})
+}
+
+func (a *api) render(
+	w http.ResponseWriter,
+	status int,
+	executeTempl func(buf *bytes.Buffer) error,
+) {
 	w.Header().Add("Content-Type", "text/html")
-	w.WriteHeader(404)
-	fmt.Fprint(w, "<h1>Page not found</h1>")
+
+	var buf bytes.Buffer
+	if err := executeTempl(&buf); err != nil {
+		fmt.Printf("error: %s\n", err)
+
+		w.WriteHeader(500)
+		buf.Reset()
+		if err := a.page500.Execute(&buf, nil); err != nil {
+			fmt.Fprint(w, "<h1>Internal Server Error</h1")
+		}
+		return
+	}
+
+	w.WriteHeader(status)
+	io.Copy(w, &buf)
 }
