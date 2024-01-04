@@ -1,8 +1,11 @@
 package server
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"html/template"
+	"io"
 	"net/http"
 
 	termfreq "github.com/soramon0/kirlia/pkg/term_freq"
@@ -11,17 +14,28 @@ import (
 type api struct {
 	*http.Server
 	tfIndex *termfreq.TermFreqIndex
+	templ   *template.Template
 }
 
-func NewServer(addr string, tfIndex *termfreq.TermFreqIndex) *api {
+func NewServer(addr string, tfIndex *termfreq.TermFreqIndex) (*api, error) {
+	if tfIndex == nil || len(*tfIndex) == 0 {
+		return nil, fmt.Errorf("error: index cannot be empty")
+	}
+
+	t, err := template.ParseFiles("resources/index.html")
+	if err != nil {
+		return nil, err
+	}
+
 	api := &api{
 		Server:  &http.Server{Addr: addr},
 		tfIndex: tfIndex,
+		templ:   t,
 	}
 
 	api.Server.Handler = api.newMux()
 
-	return api
+	return api, nil
 }
 
 func (a *api) Serve() error {
@@ -47,7 +61,6 @@ func (a *api) newMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", a.serveHomePage)
-	mux.HandleFunc("/api/search", a.searchPage)
 
 	return mux
 }
@@ -65,14 +78,15 @@ func (a *api) serveHomePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "text/html")
-	fmt.Fprint(w, "<h1>Hello world</h1>")
-}
 
-func (a *api) searchPage(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		w.Header().Add("Content-Type", "text/html")
-		fmt.Fprint(w, "<h1>Query Index</h1>")
+	var buf bytes.Buffer
+	if err := a.templ.Execute(&buf, nil); err != nil {
+		fmt.Printf("error: %s\n", err)
+		w.WriteHeader(500)
+		fmt.Fprint(w, "<h1>Internal Server Error</h1")
+		return
 	}
+	io.Copy(w, &buf)
 }
 
 func (a *api) notFound(w http.ResponseWriter) {

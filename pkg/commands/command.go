@@ -67,9 +67,12 @@ func (c *cmd) Execute(args []string) error {
 		}
 		fmt.Printf("Loaded %d indexed files from index.%s ...\n", len(tfIndex), *format)
 
-		if err := server.NewServer(*addr, &tfIndex).Serve(); err != nil {
+		app, err := server.NewServer(*addr, &tfIndex)
+		if err != nil {
 			return err
 		}
+
+		return app.Serve()
 
 	default:
 		return fmt.Errorf("error: unknown %q command", cmdName)
