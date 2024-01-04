@@ -98,6 +98,7 @@
           const result = await search(terms);
           resultContainer.innerHTML = JSON.stringify(result);
         } catch (err) {
+          resultContainer.innerHTML = "";
           errContainer.innerHTML = `<p>${err.message || "search failed"}</p>`;
         }
       });
