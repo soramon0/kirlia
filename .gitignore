@@ -17,6 +17,9 @@
 # Go workspace file
 go.work
 
+# Air package
+tmp
+
 index.json
 index.msgpack
 kirlia

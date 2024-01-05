@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"os"
 
 	termfreq "github.com/soramon0/kirlia/pkg/term_freq"
 )
@@ -25,15 +26,19 @@ func NewServer(addr string, tfIndex *termfreq.TermFreqIndex) (*api, error) {
 		return nil, fmt.Errorf("error: index cannot be empty")
 	}
 
-	t, err := template.ParseFiles("resources/index.html")
+	root, err := getAbsRootPath("resources")
 	if err != nil {
 		return nil, err
 	}
-	t404, err := template.ParseFiles("resources/404.html")
+	t, err := template.ParseFiles(root + "/index.html")
 	if err != nil {
 		return nil, err
 	}
-	t500, err := template.ParseFiles("resources/500.html")
+	t404, err := template.ParseFiles(root + "/404.html")
+	if err != nil {
+		return nil, err
+	}
+	t500, err := template.ParseFiles(root + "/500.html")
 	if err != nil {
 		return nil, err
 	}
@@ -163,4 +168,17 @@ func (a *api) render(
 type apiResponse struct {
 	Msg  string `json:"msg"`
 	Data any    `json:"data,omitempty"`
+}
+
+func getAbsRootPath(path string) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	if wd[len(wd)-3:] == "cmd" {
+		wd = wd[0 : len(wd)-4]
+	}
+
+	return fmt.Sprintf("%s/%s", wd, path), nil
 }
