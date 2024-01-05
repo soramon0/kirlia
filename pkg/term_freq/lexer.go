@@ -9,7 +9,7 @@ type lexer struct {
 	content []rune
 }
 
-func newLexer(c string) *lexer {
+func NewLexer(c string) *lexer {
 	return &lexer{content: []rune(c)}
 }
 
@@ -25,7 +25,7 @@ func (l *lexer) chop(n int) *string {
 	return &token
 }
 
-func (l *lexer) nextToken() *string {
+func (l *lexer) NextToken() *string {
 	l.trimLeftSpace()
 	if len(l.content) == 0 {
 		return nil

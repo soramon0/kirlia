@@ -150,8 +150,8 @@ func createTermFreq(r io.Reader) (TermFreq, error) {
 
 		switch t := token.(type) {
 		case xml.CharData:
-			l := newLexer(string(t))
-			term := l.nextToken()
+			l := NewLexer(string(t))
+			term := l.NextToken()
 			for {
 				if term == nil {
 					break
@@ -163,7 +163,7 @@ func createTermFreq(r io.Reader) (TermFreq, error) {
 					tf[*term] = 1
 				}
 
-				term = l.nextToken()
+				term = l.NextToken()
 			}
 		}
 	}

@@ -101,6 +101,46 @@ func (a *api) serveHomePage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func findTermFreq(term string, doc *termfreq.TermFreq) float32 {
+	freq, ok := (*doc)[term]
+	if !ok {
+		return 0.0
+	}
+
+	var docFreqSum uint = 0
+	for _, f := range *doc {
+		docFreqSum += f
+	}
+
+	return float32(freq) / float32(docFreqSum)
+}
+
+func findDocsFreq(terms string, docs *termfreq.TermFreqIndex) map[string]float32 {
+	data := make(map[string]float32, 0)
+
+	for filename, doc := range *docs {
+		fmt.Println("Searching", filename)
+		l := termfreq.NewLexer(terms)
+		term := l.NextToken()
+		var total_freq float32 = 0.0
+		for {
+			if term == nil {
+				fmt.Println()
+				break
+			}
+			freq := findTermFreq(*term, &doc)
+			total_freq += freq
+			fmt.Printf("Term %s => %f\n", *term, freq)
+
+			term = l.NextToken()
+		}
+
+		data[filename] = total_freq
+	}
+
+	return data
+}
+
 func (a *api) searchDocuments(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		a.jsonResponse(w, http.StatusBadRequest, apiResponse{Msg: "invalid request method"})
@@ -113,7 +153,9 @@ func (a *api) searchDocuments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.jsonResponse(w, http.StatusOK, apiResponse{Msg: query})
+	data := findDocsFreq(query, a.tfIndex)
+	res := apiResponse{Data: data, Msg: fmt.Sprintf("Searched %d files", len(*a.tfIndex))}
+	a.jsonResponse(w, http.StatusOK, &res)
 }
 
 func (a *api) jsonResponse(w http.ResponseWriter, status int, data any) {

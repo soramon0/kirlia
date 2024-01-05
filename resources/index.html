@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -81,32 +81,38 @@
     </main>
 
     <script>
-      const form = document.querySelector("form");
-      const errContainer = document.getElementById("error");
-      const resultContainer = document.getElementById("result");
+      const form = document.querySelector('form');
+      const errContainer = document.getElementById('error');
+      const resultContainer = document.getElementById('result');
 
-      form.addEventListener("submit", async (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        errContainer.innerHTML = "";
+        errContainer.innerHTML = '';
         const formData = new FormData(e.target);
-        const terms = formData.get("q");
+        const terms = formData.get('q');
         if (!terms) {
           errContainer.innerHTML = `<p>Query value is required</p>`;
           return;
         }
         try {
           const result = await search(terms);
-          resultContainer.innerHTML = JSON.stringify(result);
+          const container = document.createElement('div');
+          container.innerHTML = `<h3>${result.msg}</h3>`;
+          for (const [doc, freq] of Object.entries(result.data)) {
+            const p = document.createElement('p');
+            p.textContent = `${doc}: ${freq}`;
+            container.appendChild(p);
+          }
+          resultContainer.innerHTML = container.innerHTML;
         } catch (err) {
-          resultContainer.innerHTML = "";
-          errContainer.innerHTML = `<p>${err.message || "search failed"}</p>`;
+          resultContainer.innerHTML = '';
+          errContainer.innerHTML = `<p>${err.message || 'search failed'}</p>`;
         }
       });
 
       async function search(terms) {
-        const response = await fetch(
-          `/api/search?q=${encodeURIComponent(terms)}`,
-        );
+        const url = `/api/search?q=${encodeURIComponent(terms)}`;
+        const response = await fetch(url);
         const data = await response.json();
         if (!response.ok) {
           throw new Error(data.msg);
