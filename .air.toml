@@ -3,12 +3,12 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = []
+  args_bin = ["serve"]
   bin = "./tmp/main"
-  cmd = "go build -o ./tmp/main ./cmd/main.go && ./tmp/main serve"
+  cmd = "go build -o ./tmp/main ./cmd/main.go"
   # It's not necessary to trigger build each time file changes if it's too frequent.
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata", "bin"]
+  exclude_dir = ["docs.gl", "assets", "tmp", "vendor", "testdata", "bin"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
