@@ -46,7 +46,7 @@ func NewServer(addr string, tfIndex *termfreq.TermFreqIndex) (*api, error) {
 		page500:  t500,
 	}
 
-	api.Server.Handler = api.newMux()
+	api.Server.Handler = logRequestHandler(api.newMux())
 
 	return api, nil
 }
