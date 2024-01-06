@@ -197,12 +197,6 @@ func (a *api) notFound(w http.ResponseWriter) {
 	})
 }
 
-func (a *api) internalErr(w http.ResponseWriter) {
-	a.render(w, http.StatusInternalServerError, func(buf *bytes.Buffer) error {
-		return a.page500.Execute(buf, nil)
-	})
-}
-
 func (a *api) render(
 	w http.ResponseWriter,
 	status int,
