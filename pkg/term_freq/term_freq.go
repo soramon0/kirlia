@@ -112,7 +112,7 @@ func newIndex(inputFile string, reportSkipped bool) (TermFreqIndex, error) {
 		key := strings.Builder{}
 		subpaths := strings.Split(path, "/")
 		targetPaths := strings.Split(inputFile, "/")
-		parentPath := targetPaths[len(targetPaths)-1]
+		parentPath := targetPaths[0]
 		for i, p := range subpaths {
 			if strings.EqualFold(p, parentPath) {
 				rest := strings.Join(subpaths[i:], "/")
