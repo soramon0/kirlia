@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"math"
 	"net/http"
 	"os"
 
@@ -101,44 +102,59 @@ func (a *api) serveHomePage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func findTermFreq(term string, doc *termfreq.TermFreq) float32 {
-	freq, ok := (*doc)[term]
-	if !ok {
-		return 0.0
-	}
+func tf(term string, doc *termfreq.TermFreq) float64 {
+	// get the number of times the term appears in a document
+	freq := (*doc)[term]
 
-	var docFreqSum uint = 0
-	for _, f := range *doc {
-		docFreqSum += f
-	}
-
-	return float32(freq) / float32(docFreqSum)
+	// devided by the total number of words in the document.
+	return float64(freq) / float64(len(*doc))
 }
 
-func findDocsFreq(terms string, docs *termfreq.TermFreqIndex) map[string]float32 {
-	data := make(map[string]float32, 0)
+func idf(term string, docs *termfreq.TermFreqIndex) float64 {
+	// number of documents in the index
+	n := float64(len(*docs))
+	// number of documents in the index that contain the term
+	count := 0
+	for _, doc := range *docs {
+		if _, ok := doc[term]; ok {
+			count += 1
+		}
+	}
+
+	// avoid deviding by zero
+	m := math.Max(float64(count), 1)
+	return math.Log10(n / m)
+}
+
+type indexResult struct {
+	DocName string  `json:"doc_name"`
+	Rank    float64 `json:"rank"`
+}
+
+func searchIndex(terms string, docs *termfreq.TermFreqIndex) []indexResult {
+	result := make([]indexResult, 0)
 
 	for filename, doc := range *docs {
-		fmt.Println("Searching", filename)
+		rank := 0.0
 		l := termfreq.NewLexer(terms)
 		term := l.NextToken()
-		var total_freq float32 = 0.0
 		for {
 			if term == nil {
-				fmt.Println()
 				break
 			}
-			freq := findTermFreq(*term, &doc)
-			total_freq += freq
-			fmt.Printf("Term %s => %f\n", *term, freq)
+			rank += tf(*term, &doc) * idf(*term, docs)
 
 			term = l.NextToken()
 		}
 
-		data[filename] = total_freq
+		if rank == 0.0 {
+			continue
+		}
+
+		result = append(result, indexResult{filename, rank})
 	}
 
-	return data
+	return result
 }
 
 func (a *api) searchDocuments(w http.ResponseWriter, r *http.Request) {
@@ -153,8 +169,11 @@ func (a *api) searchDocuments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := findDocsFreq(query, a.tfIndex)
-	res := apiResponse{Data: data, Msg: fmt.Sprintf("Searched %d files", len(*a.tfIndex))}
+	result := searchIndex(query, a.tfIndex)
+	res := apiResponse{
+		Data: result,
+		Msg:  fmt.Sprintf("Close match in %d files", len(result)),
+	}
 	a.jsonResponse(w, http.StatusOK, &res)
 }
 

@@ -156,9 +156,9 @@ func createTermFreq(r io.Reader) (TermFreq, error) {
 				if term == nil {
 					break
 				}
-				v, ok := tf[*term]
+				_, ok := tf[*term]
 				if ok {
-					tf[*term] = v + 1
+					tf[*term] += 1
 				} else {
 					tf[*term] = 1
 				}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -64,6 +64,15 @@
       #error p {
         padding: 4px 16px;
       }
+
+      #result {
+        margin: 8px 0px;
+        overflow-y: scroll;
+      }
+
+      #result p {
+        padding: 2px 4px;
+      }
     </style>
   </head>
   <body>
@@ -81,32 +90,34 @@
     </main>
 
     <script>
-      const form = document.querySelector('form');
-      const errContainer = document.getElementById('error');
-      const resultContainer = document.getElementById('result');
+      const form = document.querySelector("form");
+      const errContainer = document.getElementById("error");
+      const resultContainer = document.getElementById("result");
 
-      form.addEventListener('submit', async (e) => {
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        errContainer.innerHTML = '';
+        errContainer.innerHTML = "";
         const formData = new FormData(e.target);
-        const terms = formData.get('q');
+        const terms = formData.get("q");
         if (!terms) {
           errContainer.innerHTML = `<p>Query value is required</p>`;
           return;
         }
         try {
           const result = await search(terms);
-          const container = document.createElement('div');
+          const container = document.createElement("div");
           container.innerHTML = `<h3>${result.msg}</h3>`;
-          for (const [doc, freq] of Object.entries(result.data)) {
-            const p = document.createElement('p');
-            p.textContent = `${doc}: ${freq}`;
+
+          const data = result.data.sort((a, b) => b.rank - a.rank);
+          for (const item of data) {
+            const p = document.createElement("p");
+            p.textContent = `${item.doc_name}: ${item.rank}%`;
             container.appendChild(p);
           }
           resultContainer.innerHTML = container.innerHTML;
         } catch (err) {
-          resultContainer.innerHTML = '';
-          errContainer.innerHTML = `<p>${err.message || 'search failed'}</p>`;
+          resultContainer.innerHTML = "";
+          errContainer.innerHTML = `<p>${err.message || "search failed"}</p>`;
         }
       });
 
