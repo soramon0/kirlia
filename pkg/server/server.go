@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"sort"
 
 	termfreq "github.com/soramon0/kirlia/pkg/term_freq"
 )
@@ -153,6 +154,10 @@ func searchIndex(terms string, docs *termfreq.TermFreqIndex) []indexResult {
 
 		result = append(result, indexResult{filename, rank})
 	}
+
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].Rank > result[j].Rank
+	})
 
 	return result
 }

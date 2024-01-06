@@ -108,8 +108,7 @@
           const container = document.createElement("div");
           container.innerHTML = `<h3>${result.msg}</h3>`;
 
-          const data = result.data.sort((a, b) => b.rank - a.rank);
-          for (const item of data) {
+          for (const item of result.data) {
             const p = document.createElement("p");
             p.textContent = `${item.doc_name}: ${item.rank}%`;
             container.appendChild(p);
