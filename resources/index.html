@@ -110,7 +110,8 @@
 
           for (const item of result.data) {
             const p = document.createElement("p");
-            p.textContent = `${item.doc_name}: ${item.rank}%`;
+            const rank = (item.rank * 100).toFixed(4);
+            p.textContent = `${item.doc_name}: ${rank}%`;
             container.appendChild(p);
           }
           resultContainer.innerHTML = container.innerHTML;
