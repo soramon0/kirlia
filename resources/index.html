@@ -12,7 +12,7 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        max-width: 400px;
+        max-width: 500px;
         margin: 0 auto;
       }
 
@@ -68,10 +68,16 @@
       #result {
         margin: 8px 0px;
         overflow-y: scroll;
+        width: 100%;
       }
 
-      #result p {
-        padding: 2px 4px;
+      #result ul {
+        padding: 0px;
+        list-style: none;
+      }
+
+      #result ul li {
+        padding: 6px 4px;
       }
     </style>
   </head>
@@ -96,28 +102,20 @@
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        errContainer.innerHTML = "";
+        errContainer.replaceChildren();
+
         const formData = new FormData(e.target);
         const terms = formData.get("q");
         if (!terms) {
-          errContainer.innerHTML = `<p>Query value is required</p>`;
+          errContainer.replaceChildren(createP("Query value is required"));
           return;
         }
+
         try {
           const result = await search(terms);
-          const container = document.createElement("div");
-          container.innerHTML = `<h3>${result.msg}</h3>`;
-
-          for (const item of result.data) {
-            const p = document.createElement("p");
-            const rank = (item.rank * 100).toFixed(4);
-            p.textContent = `${item.doc_name}: ${rank}%`;
-            container.appendChild(p);
-          }
-          resultContainer.innerHTML = container.innerHTML;
+          resultContainer.appendChild(createResultList(result));
         } catch (err) {
-          resultContainer.innerHTML = "";
-          errContainer.innerHTML = `<p>${err.message || "search failed"}</p>`;
+          errContainer.replaceChildren(createP(err.message || "search failed"));
         }
       });
 
@@ -129,6 +127,30 @@
           throw new Error(data.msg);
         }
         return data;
+      }
+
+      function createResultList(result) {
+        const fragment = document.createDocumentFragment();
+        const header = document.createElement("h3");
+        const ul = document.createElement("ul");
+
+        header.textContent = result.msg;
+        fragment.appendChild(header);
+
+        for (const item of result.data) {
+          const li = document.createElement("li");
+          const rank = (item.rank * 100).toFixed(4);
+          li.textContent = `${item.doc_name}: ${rank}%`;
+          ul.appendChild(li);
+        }
+        fragment.appendChild(ul);
+        return fragment;
+      }
+
+      function createP(text) {
+        const p = document.createElement("p");
+        p.textContent = text;
+        return p;
       }
     </script>
   </body>
