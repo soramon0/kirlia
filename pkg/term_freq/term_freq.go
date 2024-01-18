@@ -145,7 +145,8 @@ func createTermFreq(r io.Reader) (TermFreq, error) {
 			if err == io.EOF {
 				break
 			}
-			return tf, err
+			fmt.Printf("error: failed to decode xml token. %s\n", err)
+			continue
 		}
 
 		switch t := token.(type) {
