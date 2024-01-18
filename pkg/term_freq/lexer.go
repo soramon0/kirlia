@@ -7,54 +7,55 @@ import (
 
 type lexer struct {
 	content []rune
+	index   int
 }
 
 func NewLexer(c string) *lexer {
-	return &lexer{content: []rune(c)}
+	return &lexer{content: []rune(c), index: 0}
 }
 
 func (l *lexer) trimLeftSpace() {
-	for len(l.content) > 0 && unicode.IsSpace(l.content[0]) {
-		l.content = l.content[1:]
+	for len(l.content) != l.index && unicode.IsSpace(l.content[l.index]) {
+		l.index++
 	}
 }
 
-func (l *lexer) chop(n int) *string {
-	token := string(l.content[0:n])
-	l.content = l.content[n:]
+func (l *lexer) chopFrom(start, end int) *string {
+	token := string(l.content[start:end])
+	l.index = end
 	return &token
 }
 
 func (l *lexer) NextToken() *string {
 	l.trimLeftSpace()
-	if len(l.content) == 0 {
+	if l.index == len(l.content) {
 		return nil
 	}
 
-	if unicode.IsLetter(l.content[0]) {
+	if unicode.IsLetter(l.content[l.index]) {
 		return l.chopLetters()
 	}
 
-	if unicode.IsNumber(l.content[0]) {
+	if unicode.IsNumber(l.content[l.index]) {
 		return l.chopNumbers()
 	}
 
-	return l.chop(1)
+	return l.chopFrom(l.index, l.index+1)
 }
 
 func (l *lexer) chopLetters() *string {
-	i := 0
-	for i < len(l.content) && unicode.IsLetter(l.content[i]) {
+	i := l.index
+	for i != len(l.content) && unicode.IsLetter(l.content[i]) {
 		i += 1
 	}
-	token := strings.ToUpper(*l.chop(i))
+	token := strings.ToLower(*l.chopFrom(l.index, i))
 	return &token
 }
 
 func (l *lexer) chopNumbers() *string {
-	i := 0
-	for i < len(l.content) && unicode.IsNumber(l.content[i]) {
+	i := l.index
+	for i != len(l.content) && unicode.IsNumber(l.content[i]) {
 		i += 1
 	}
-	return l.chop(i)
+	return l.chopFrom(l.index, i)
 }
