@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strings"
 
 	termfreq "github.com/soramon0/kirlia/pkg/term_freq"
 )
@@ -168,7 +169,7 @@ func (a *api) searchDocuments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := r.URL.Query().Get("q")
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	if query == "" {
 		a.jsonResponse(w, http.StatusBadRequest, apiResponse{Msg: "q query param is required"})
 		return

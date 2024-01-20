@@ -105,7 +105,7 @@
         errContainer.replaceChildren();
 
         const formData = new FormData(e.target);
-        const terms = formData.get("q");
+        const terms = String(formData.get("q") || "").trim();
         if (!terms) {
           errContainer.replaceChildren(createP("Query value is required"));
           return;
@@ -113,7 +113,7 @@
 
         try {
           const result = await search(terms);
-          resultContainer.appendChild(createResultList(result));
+          resultContainer.replaceChildren(createResultList(result));
         } catch (err) {
           errContainer.replaceChildren(createP(err.message || "search failed"));
         }
