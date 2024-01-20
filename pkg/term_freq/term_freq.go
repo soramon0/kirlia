@@ -78,7 +78,7 @@ func newIndex(inputFile string, reportSkipped bool) (TermFreqIndex, error) {
 		if ext == "" || ext != ".xhtml" && ext != ".xml" {
 			if reportSkipped {
 				skippedCount++
-				fmt.Printf("Skiping %s\n", path)
+				fmt.Printf("Skiping %s\n", filepath.Join(inputFile, d.Name()))
 			}
 			return nil
 		}
